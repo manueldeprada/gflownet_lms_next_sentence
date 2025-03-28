@@ -34,13 +34,12 @@ def get_prompts():
     return prompts
 
 def compute_gflownet(temp):
-    device = "cuda" if torch.cuda.is_available() else "cpu"
     model = load_model(f"{models_dir}/{temp_to_name[temp]}/last.ckpt")
     tokenizer = AutoTokenizer.from_pretrained("gpt2-xl")
     prompts = get_prompts()
     results = np.zeros((len(prompts), 4))
     for i, prompt in tqdm(enumerate(prompts), total=len(prompts), leave=False):
-        print(f"Prompt {i + 1}. ", end="")
+        print(f"Prompt {i + 1}")
         samples, log_pf = generate_samples(
             model,
             tokenizer,
