@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 
 temp_to_name = {
-    0.825: "2025-03-22_00-12-06",
+    # 0.825: "2025-03-22_00-12-06", # [  0.78071487   0.20636478 -75.96899086 -30.27881896]
     0.85: "2025-03-22_10-08-33",
     0.875: "2025-03-22_10-08-33",
     0.9: "2025-03-22_10-08-39",
@@ -84,17 +84,18 @@ def compute_huggingface(temp):
 
 
 def main():
-    df_results = pd.DataFrame(columns=["temp", "diversity", "det", "avg_likelihood", "max_likelihood"])
+    results = []
     for temp in temp_to_name.keys():
         print(f"Temperature: {temp}")
         results = compute_gflownet(temp)
-        df_results = df_results.append({
-            "temp": temp,
-            "diversity": results[0],
-            "det": results[1],
-            "avg_likelihood": results[2],
-            "max_likelihood": results[3]
-        }, ignore_index=True)
+        results.append([
+            temp,
+            results[0],
+            results[1],
+            results[2],
+            results[3]
+        ])
+    df_results = pd.DataFrame(results, columns=["temp", "diversity", "det", "avg_likelihood", "max_likelihood"])
     df_results.to_csv("gflownet_results.csv", index=False)
 
 

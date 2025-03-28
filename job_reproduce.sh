@@ -13,4 +13,4 @@ module load eth_proxy
 export HUGGINGFACE_HUB_CACHE=/cluster/work/cotterell/mdeprada/hf-cache
 
 # Run training script
-python replicate_experiment.py
+python -u replicate_experiment.py
