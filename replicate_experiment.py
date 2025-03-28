@@ -9,7 +9,7 @@ import pandas as pd
 
 temp_to_name = {
     # 0.825: "2025-03-22_00-12-06", # [  0.78071487   0.20636478 -75.96899086 -30.27881896], [  0.80001899   0.23968567 -73.68188591 -25.84072336]
-    0.85: "2025-03-22_10-08-33",
+    # 0.85: "2025-03-22_10-08-33",# [  0.78038039   0.21906277 -72.01942116 -26.20678624]
     0.875: "2025-03-22_10-08-33",
     0.9: "2025-03-22_10-08-39",
     0.925: "2025-03-22_10-08-42",
@@ -86,13 +86,13 @@ def main():
     results = []
     for temp in temp_to_name.keys():
         print(f"Temperature: {temp}")
-        results = compute_gflownet(temp)
+        out = compute_gflownet(temp)
         results.append([
             temp,
-            results[0],
-            results[1],
-            results[2],
-            results[3]
+            out[0],
+            out[1],
+            out[2],
+            out[3]
         ])
     df_results = pd.DataFrame(results, columns=["temp", "diversity", "det", "avg_likelihood", "max_likelihood"])
     df_results.to_csv("gflownet_results.csv", index=False)
