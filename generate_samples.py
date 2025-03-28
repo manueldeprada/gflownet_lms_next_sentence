@@ -48,7 +48,8 @@ def generate_samples(model, tokenizer, prompt, n_samples=4, min_sentence_len=1, 
     # generated_sentences, _ = model(prompt_batch, n_samples=n_samples)
     
     generated_sentences = tokenizer.batch_decode(generated_text[:, len(prompt_ids):])
-    # generated_sentences = [sent.replace(".", "").strip() for sent in generated_sentences]
+    # retain only first occurence of "." in each sentence
+    generated_sentences = [sent.replace(".", "").strip() for sent in generated_sentences]
     
     return generated_sentences, log_pf
 

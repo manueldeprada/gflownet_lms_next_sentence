@@ -34,6 +34,7 @@ def get_prompts():
     return prompts
 
 def compute_gflownet(temp):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     model = load_model(f"{models_dir}/{temp_to_name[temp]}/last.ckpt")
     tokenizer = AutoTokenizer.from_pretrained("gpt2-xl")
     prompts = get_prompts()
@@ -58,6 +59,7 @@ def compute_gflownet(temp):
     return final_results
 
 def compute_huggingface(temp):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     model = AutoModelForCausalLM.from_pretrained("gpt2-xl", device_map="auto")
     tokenizer = AutoTokenizer.from_pretrained("gpt2-xl")
     prompts = get_prompts()
