@@ -5,11 +5,10 @@ from sentence_transformers import SentenceTransformer
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from sentence_transformers.util import cos_sim
 import pandas as pd
-from tqdm import tqdm
 
 
 temp_to_name = {
-    # 0.825: "2025-03-22_00-12-06", # [  0.78071487   0.20636478 -75.96899086 -30.27881896]
+    # 0.825: "2025-03-22_00-12-06", # [  0.78071487   0.20636478 -75.96899086 -30.27881896], [  0.80001899   0.23968567 -73.68188591 -25.84072336]
     0.85: "2025-03-22_10-08-33",
     0.875: "2025-03-22_10-08-33",
     0.9: "2025-03-22_10-08-39",
@@ -38,7 +37,7 @@ def compute_gflownet(temp):
     tokenizer = AutoTokenizer.from_pretrained("gpt2-xl")
     prompts = get_prompts()
     results = np.zeros((len(prompts), 4))
-    for i, prompt in tqdm(enumerate(prompts), total=len(prompts), leave=False):
+    for i, prompt in enumerate(prompts):
         print(f"Prompt {i + 1}")
         samples, log_pf = generate_samples(
             model,
