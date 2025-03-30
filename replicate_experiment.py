@@ -66,7 +66,7 @@ def compute_transition_scores_nonbeam(sequences, scores, normalize_logits=True):
     transition_scores = scores.gather(dim=-1, index=sequences.unsqueeze(-1)).squeeze(-1)
     return transition_scores
 
-def compute_huggingface(temp):
+def compute_huggingface(temp=1.0, do_sample=True, n_beams=1, num_beam_groups=1, top_p=0.9, num_return_sequences=10):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = AutoModelForCausalLM.from_pretrained("gpt2-xl", device_map="auto")
     tokenizer = AutoTokenizer.from_pretrained("gpt2-xl")
@@ -78,11 +78,14 @@ def compute_huggingface(temp):
         prompt_len = inputs.input_ids.shape[1]
         output = model.generate(
             **inputs,
-            do_sample=True,
+            do_sample=do_sample,
             temperature=temp,
+            top_p=top_p,
+            num_beams=n_beams,
+            num_beam_groups=num_beam_groups,
             top_k=0,
             max_new_tokens=30,
-            num_return_sequences=10,
+            num_return_sequences=num_return_sequences,
             return_dict_in_generate=True,
             output_scores=True,
         )
@@ -118,12 +121,34 @@ def gflownet():
 
 def huggingface():
     results = []
-    for temp in temp_to_name.keys():
+    for temp in [0.3, 0.5, 0.8, 1.0]:
         print(f"Temperature: {temp}")
         out = compute_huggingface(temp)
         results.append([
             "ancestral",
             temp,
+            out[0],
+            out[1],
+            out[2],
+            out[3]
+        ])
+    for top_p in [0.95]:
+        print(f"Top-p: {top_p}")
+        out = compute_huggingface(top_p=top_p)
+        results.append([
+            "top-p",
+            top_p,
+            out[0],
+            out[1],
+            out[2],
+            out[3]
+        ])
+    for n_beams in [10]:
+        print(f"Num beams: {n_beams}")
+        out = compute_huggingface(n_beams=n_beams, num_beam_groups=n_beams, do_sample=False)
+        results.append([
+            "beam",
+            n_beams,
             out[0],
             out[1],
             out[2],
