@@ -90,6 +90,8 @@ def compute_huggingface(temp=1.0, do_sample=True, n_beams=1, num_beam_groups=1, 
             num_return_sequences=num_return_sequences,
             return_dict_in_generate=True,
             output_scores=True,
+            eos_token_id=tokenizer.convert_tokens_to_ids("."),
+            forced_eos_token_id=tokenizer.convert_tokens_to_ids("."),
         )
         samples_diversity, samples_det = compute_diversity(tokenizer.batch_decode(output.sequences[:, prompt_len:]))
         samples_likelihood = compute_transition_scores_nonbeam(
