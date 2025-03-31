@@ -11,9 +11,9 @@ temp_to_name = {
     # 0.825: "2025-03-22_00-12-06", # [  0.78071487   0.20636478 -75.96899086 -30.27881896], [  0.80001899   0.23968567 -73.68188591 -25.84072336]
     # 0.85: "2025-03-22_10-08-33",# [  0.78038039   0.21906277 -72.01942116 -26.20678624]
     0.875: "2025-03-22_10-08-33",
-    0.9: "2025-03-22_10-08-39",
-    0.925: "2025-03-22_10-08-42",
-    0.95: "2025-03-22_10-08-46"
+    # 0.9: "2025-03-22_10-08-39",
+    # 0.925: "2025-03-22_10-08-42",
+    # 0.95: "2025-03-22_10-08-46"
 }
 
 models_dir = "runs/checkpoints"
@@ -33,7 +33,7 @@ def get_prompts():
     return prompts
 
 def compute_gflownet(temp):
-    model = load_model(f"{models_dir}/{temp_to_name[temp]}/last.ckpt")
+    model = load_model(f"{models_dir}/{temp_to_name[temp]}/last-v1.ckpt")
     tokenizer = AutoTokenizer.from_pretrained("gpt2-xl")
     prompts = get_prompts()
     results = np.zeros((len(prompts), 4))
@@ -79,7 +79,7 @@ def compute_huggingface(temp=1.0, do_sample=True, n_beams=1, num_beam_groups=1, 
     prompts = get_prompts()
     results = np.zeros((len(prompts), 4))
     for i, prompt in enumerate(prompts):
-        print(f"Prompt {i + 1}. ", end="")
+        print(f"Prompt {i + 1}")
         inputs = tokenizer(prompt, return_tensors="pt").to(device)
         prompt_len = inputs.input_ids.shape[1]
         output = model.generate(
@@ -96,6 +96,7 @@ def compute_huggingface(temp=1.0, do_sample=True, n_beams=1, num_beam_groups=1, 
             num_return_sequences=num_return_sequences,
             return_dict_in_generate=True,
             output_scores=True,
+            pad_token_id=tokenizer.convert_tokens_to_ids("."),
             eos_token_id=tokenizer.convert_tokens_to_ids("."),
             forced_eos_token_id=tokenizer.convert_tokens_to_ids("."),
         )
@@ -106,7 +107,7 @@ def compute_huggingface(temp=1.0, do_sample=True, n_beams=1, num_beam_groups=1, 
             normalize_logits=True,
             eos_token_id=tokenizer.convert_tokens_to_ids("."),
         )
-        samples_likelihood = transition_scores.sum(dim=1)
+        samples_likelihood = transition_scores.sum(dim=1) if n_beams == 1 else output.sequences_scores #to do
         avg_likelihood = samples_likelihood.mean().item()
         max_likelihood = samples_likelihood.max().item()
         results[i] = np.array([samples_diversity, samples_det, avg_likelihood, max_likelihood])
@@ -129,6 +130,7 @@ def gflownet():
             out[3]
         ])
     df_results = pd.DataFrame(results, columns=["type", "temp", "diversity", "det", "avg_likelihood", "max_likelihood"])
+    print(df_results)
     df_results.to_csv("gflownet_results.csv", index=False)
 
 def huggingface():
@@ -177,5 +179,22 @@ def huggingface():
     df_results.to_csv("gflownet_results.csv", index=False)
 
 if __name__ == "__main__":
-    # gflownet()
-    huggingface()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Run experiments for comparing GFlowNet and HuggingFace models')
+    subparsers = parser.add_subparsers(dest='command', help='Command to run')
+    
+    # GFlowNet command
+    gfn_parser = subparsers.add_parser('gflownet', help='Run GFlowNet experiments')
+    
+    # HuggingFace command
+    hf_parser = subparsers.add_parser('huggingface', help='Run HuggingFace experiments')
+    
+    args = parser.parse_args()
+    
+    if args.command == 'gfnet':
+        gflownet()
+    elif args.command == 'hf':
+        huggingface()
+    else:
+        parser.print_help()
