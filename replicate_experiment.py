@@ -56,14 +56,20 @@ def compute_gflownet(temp):
     print(f"results: {final_results}")
     return final_results
 
-def compute_transition_scores_nonbeam(sequences, scores, normalize_logits=True):
+def compute_transition_scores_nonbeam(sequences, scores, normalize_logits=True, eos_token_id=None):
     if len(sequences.shape) == 1:
         sequences = sequences.unsqueeze(0)
     scores = torch.stack(scores, dim=1) # batch_size x seq_len x vocab_size
     if normalize_logits:
         scores = scores.log_softmax(dim=-1)
     sequences = sequences[:, 1:]
-    transition_scores = scores.gather(dim=-1, index=sequences.unsqueeze(-1)).squeeze(-1)
+    transition_scores = scores[:,1:,:].gather(dim=-1, index=sequences.unsqueeze(-1)).squeeze(-1)
+    if eos_token_id is not None:
+        #mask: all but the first eos token
+        mask = sequences.eq(eos_token_id)
+        not_first_eos = (mask.cumsum(dim=1) != 1)
+        mask = mask & not_first_eos
+        transition_scores = transition_scores.masked_fill(mask, 0.0)
     return transition_scores
 
 def compute_huggingface(temp=1.0, do_sample=True, n_beams=1, num_beam_groups=1, top_p=1.0, num_return_sequences=10, diversity_penalty=0.0, length_penalty=1.0):
@@ -94,11 +100,13 @@ def compute_huggingface(temp=1.0, do_sample=True, n_beams=1, num_beam_groups=1, 
             forced_eos_token_id=tokenizer.convert_tokens_to_ids("."),
         )
         samples_diversity, samples_det = compute_diversity(tokenizer.batch_decode(output.sequences[:, prompt_len:]))
-        samples_likelihood = compute_transition_scores_nonbeam(
+        transition_scores = compute_transition_scores_nonbeam(
             output.sequences[:, prompt_len:],
             output.scores,
-            normalize_logits=True
-        ).sum(dim=1)
+            normalize_logits=True,
+            eos_token_id=tokenizer.convert_tokens_to_ids("."),
+        )
+        samples_likelihood = transition_scores.sum(dim=1)
         avg_likelihood = samples_likelihood.mean().item()
         max_likelihood = samples_likelihood.max().item()
         results[i] = np.array([samples_diversity, samples_det, avg_likelihood, max_likelihood])
