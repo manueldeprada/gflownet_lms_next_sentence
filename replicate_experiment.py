@@ -66,7 +66,7 @@ def compute_transition_scores_nonbeam(sequences, scores, normalize_logits=True):
     transition_scores = scores.gather(dim=-1, index=sequences.unsqueeze(-1)).squeeze(-1)
     return transition_scores
 
-def compute_huggingface(temp=1.0, do_sample=True, n_beams=1, num_beam_groups=1, top_p=0.9, num_return_sequences=10):
+def compute_huggingface(temp=1.0, do_sample=True, n_beams=1, num_beam_groups=1, top_p=1.0, num_return_sequences=10, diversity_penalty=0.0, length_penalty=1.0):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = AutoModelForCausalLM.from_pretrained("gpt2-xl", device_map="auto")
     tokenizer = AutoTokenizer.from_pretrained("gpt2-xl")
@@ -84,6 +84,8 @@ def compute_huggingface(temp=1.0, do_sample=True, n_beams=1, num_beam_groups=1, 
             num_beams=n_beams,
             num_beam_groups=num_beam_groups,
             top_k=0,
+            diversity_penalty=diversity_penalty,
+            length_penalty=length_penalty,
             max_new_tokens=30,
             num_return_sequences=num_return_sequences,
             return_dict_in_generate=True,
@@ -145,7 +147,8 @@ def huggingface():
         ])
     for n_beams in [10]:
         print(f"Num beams: {n_beams}")
-        out = compute_huggingface(n_beams=n_beams, num_beam_groups=n_beams, do_sample=False)
+        out = compute_huggingface(n_beams=n_beams, num_beam_groups=n_beams, do_sample=False, 
+                                  diversity_penalty=1.0, length_penalty=0.0)
         results.append([
             "beam",
             n_beams,
