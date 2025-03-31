@@ -185,10 +185,10 @@ if __name__ == "__main__":
     subparsers = parser.add_subparsers(dest='command', help='Command to run')
     
     # GFlowNet command
-    gfn_parser = subparsers.add_parser('gflownet', help='Run GFlowNet experiments')
+    gfn_parser = subparsers.add_parser('gfnet', help='Run GFlowNet experiments')
     
     # HuggingFace command
-    hf_parser = subparsers.add_parser('huggingface', help='Run HuggingFace experiments')
+    hf_parser = subparsers.add_parser('hf', help='Run HuggingFace experiments')
     
     args = parser.parse_args()
     
