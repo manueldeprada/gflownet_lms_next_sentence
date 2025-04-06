@@ -1,6 +1,6 @@
 # GFlowNet fine-tuning for next sentence continuation
 
-Open reproduction of GFlowNet fine-tuning for next sentence continuation experiment. Builds on [the original repo](https://github.com/GFNOrg/gfn-lm-tuning/). See below to download the finetuned models.
+Open reproduction of GFlowNet fine-tuning for next sentence continuation experiment. Builds on [the original repo](https://github.com/GFNOrg/gfn-lm-tuning/) from the paper [Amortizing intractable inference in large language models](https://arxiv.org/abs/2310.04363). See below to download the finetuned models that I had to reproduce.
 
 - `job_train.sh $TEMP` will run the authors' script to train GPT2-XL on the next sentence continuation task with GFlowNet steering towards the global temperature target distribution.
 - `checkpoint_to_peft.py` converts the checkpoints to lightweight PEFT format files.
