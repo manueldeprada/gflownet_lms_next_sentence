@@ -1,5 +1,5 @@
 #!/bin/bash
-# run_train.sh
+#SBATCH --output=job_train-%j.out
 
 TEMP_END=${1:-0.825}
 

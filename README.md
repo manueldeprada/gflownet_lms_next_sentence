@@ -1,39 +1,46 @@
 # GFlowNet fine-tuning for next sentence continuation
 
-This file gives instructions for how to setup and run the experiment on next sentence continuation. We will go over:
+Open reproduction of GFlowNet fine-tuning for next sentence continuation experiment. Builds on [the original repo](https://github.com/GFNOrg/gfn-lm-tuning/). See below to download the finetuned models.
 
-1. How to create the dataset of prompts that the model is trained on.
-2. How to train the GFlowNet fine-tuned model on the dataset of prompts.
-3. The specific configuration used in our paper.
+- `job_train.sh $TEMP` will run the authors' script to train GPT2-XL on the next sentence continuation task with GFlowNet steering towards the global temperature target distribution.
+- `checkpoint_to_peft.py` converts the checkpoints to lightweight PEFT format files.
+- `replicate_experiment.py` runs the inference to reproduce the figure in the paper. Outputs a CSV file. 
+- `plot.ipynb` plots the results from the CSV file.
 
-The requirements can be installed using `pip`:
+## TLDR
 
-```pip install -r requirements.txt```
+### ⚠️ Beware of how likelihood is computed for evaluation. 
+The figure in the original paper (first plot) can be reproduced _only_ by evaluating the GFlowNet models under their own likelihoods, while evaluating baseline models (e.g., temperature sampling) under the base $T=1$ GPT-2 XL likelihood.
 
-Note that this experiment has to be run from the `next_sentence` directory for all imports and relative paths to function correctly.
+Next plots of the first row show what happens if you instead:
 
-## 1. Create the dataset
+1. Evaluate both GFlowNet and baselines under their own likelihoods (fair comparison under own likelihood).
 
-The dataset consists of 1000 prompts obtained from Open Web Text. Each prompt is guaranteed to have between 1-3 sentences (each limited to a minimum of 5 and maximum of 30 tokens using the GPT-2 tokenizer). The data is already included in the repository under `data/openwebtext/prompts.txt`, but to see how it was generated (and regenerate it yourself) run:
+2. Evaluate both under the same fixed base model likelihood (fair comparison under base model).
 
-```python data/openwebtext/data_generator.py```
+The second row of plots repeats the comparison but switches from using maximum likelihood to average likelihood over sequences.
+The final row changes the x-axis from average cosine similarity to the determinant of the Gram matrix of the sentence embeddings.
+![plot](plot.png)
+## Notes
+- "Own likelihood" means $p_{\theta}(x)$ under the model $\theta$ that generated the sequence $x$.
 
-The resulting prompts will be saved within `data/openwebtext/prompts.txt`, and some statistics about them will be saved in `data/openwebtext/prompt_stats.png`.
+- "Base likelihood" means $p_{\text{GPT-2 XL}}(x)$ where GPT-2 XL is fixed at $T=1$ (no fine-tuning or local temperature applied).
 
-## 2. Train the GFlowNet to sample the next sentence
+## Finetuned models
+I uploaded to the Hugging Face Hub the GFN fine-tuned models for the next sentence continuation task that reproduce the paper figure. You can find them here:
+- [manueldeprada/gflownet-next-sentence-gpt2xl-0.8](https://huggingface.co/manueldeprada/gflownet-next-sentence-gpt2xl-0.8) (temperature 0.8)
+- [manueldeprada/gflownet-next-sentence-gpt2xl-0.85](https://huggingface.co/manueldeprada/gflownet-next-sentence-gpt2xl-0.85) (temperature 0.85)
+- [manueldeprada/gflownet-next-sentence-gpt2xl-0.90](https://huggingface.co/manueldeprada/gflownet-next-sentence-gpt2xl-0.90) (temperature 0.9)
 
-To train the GFlowNet, run:
+The models are in PEFT format and can be loaded with the `peft` library:
+```python
+from transformers import AutoTokenizer
+from peft import AutoPeftModelForCausalLM
 
-```python train.py task=open_webtext_gpt2 device=gpu```
+model = AutoPeftModelForCausalLM.from_pretrained("manueldeprada/gflownet-next-sentence-gpt2xl-0.8", torch_dtype="auto", device_map="auto")
+tokenizer = AutoTokenizer.from_pretrained("gpt2-xl")
 
-The code uses `PyTorch Lightning` to train the model, `wandb` to log results during training, and `hydra` to manage configurations.
-
-## 3. Train with the configuration used in our paper
-
-We train with a specific set of arguments in our paper. These arguments can be specified at the command line, and modify the defaults from `configs/task/openwebtext_gpt2.yaml`. To replicate our results, run:
-
-```python train.py task=open_webtext_gpt2 device=gpu task.training.n_samples=8 task.training.accumulate_grad_batches=32 task.reward.temp_end=[temp_end]```
-
-Where `[temp_end]` is a placeholder that must be specified. In our paper, we sweep over (0.8, 0.95) in increments of 0.25.
-
-Note that this configuration requires approximately 40GB of GPU RAM.
+inputs = tokenizer("The meaning of life is", return_tensors="pt").to(model.device)
+outputs = model.generate(**inputs, max_new_tokens=50)
+print(tokenizer.decode(outputs[0], skip_special_tokens=True))
+```
